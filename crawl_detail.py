@@ -58,24 +58,25 @@ def extractDetail(page):
     # [hotel] get hotel image image-meta image-artical
     detail_info['hotels'] = []
 
-    hotel_root = page.find('p', string='ホテル').parent
-    hotels = hotel_root.find_all('div', attrs={'class': 'contents-box'})
+    if page.find('p', string='ホテル') is not None:
+        hotel_root = page.find('p', string='ホテル').parent
+        hotels = hotel_root.find_all('div', attrs={'class': 'contents-box'})
 
-    for hotel in hotels:
-        title = hotel.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
-        artical = hotel.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
-        
-        images_info = []
-        for image in hotel.find('div', attrs={'class': 'swiper-wrapper'}).find_all('div', attrs={'class': 'swiper-slide'}):
-            images_info.append({
-                'src': image['style'].split("url(")[1].split(")")[0]
+        for hotel in hotels:
+            title = hotel.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
+            artical = hotel.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
+
+            images_info = []
+            for image in hotel.find('div', attrs={'class': 'swiper-wrapper'}).find_all('div', attrs={'class': 'swiper-slide'}):
+                images_info.append({
+                    'src': image['style'].split("url(")[1].split(")")[0]
+                })
+
+            detail_info['hotels'].append({
+                'title': title,
+                'artical': artical,
+                'images_info': images_info
             })
-        
-        detail_info['hotels'].append({
-            'title': title,
-            'artical': artical,
-            'images_info': images_info
-        })
 
     # [schedual]
     detail_info['schedual'] = []
