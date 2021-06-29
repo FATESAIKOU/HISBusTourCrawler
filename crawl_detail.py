@@ -32,6 +32,27 @@ def extractDetail(page):
 
         detail_info['summary'][title] = value
 
+    # [booking]
+    detail_info['booking_info'] = []
+    cal_root = page.find('div', attrs={'id': 'calendarWrap'})
+    year_month = '20' + cal_root.find('option', attrs={'selected': 'selected'})['data-key']
+
+    available_dates = [ c.parent for c in cal_root.find_all('li', string='募集中') ]
+    for date in available_dates:
+        date_info = '{}/{}/{}'.format(
+            year_month[0:4], year_month[4:6],
+            date.select('li:nth-of-type(1)')[0].getText()
+        )
+
+        adult_price = date.select('li:nth-of-type(3)')[0].find('span').getText().replace(',', '')
+        child_price = date.select('li:nth-of-type(4)')[0].find('span').getText().replace(',', '')
+
+        detail_info['booking_info'].append({
+            'date': date_info,
+            'adult_price': adult_price,
+            'child_price': child_price
+        })
+
     # [tour point] get image image-meta image-artical
     detail_info['tour_points'] = []
 
@@ -107,12 +128,15 @@ def crawlEventDetail(detail_url):
     # get detail
     detail_info = extractDetail(page)
 
+    # add event url
+    detail_info['event_url'] = detail_url
+
     return detail_info
     
 
 if __name__== '__main__':
     detail_url = sys.argv[1]
-    
+
     detail_info = crawlEventDetail(detail_url)
-    
+
     print(json.dumps(detail_info, ensure_ascii=False, indent=4))
