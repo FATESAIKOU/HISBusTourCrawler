@@ -1,4 +1,8 @@
 #!/usr/bin/env python3 
+"""
+@argv[1]: The json file containing bus tour detail urls for crawling
+"""
+import time
 import json
 import urllib
 import requests
@@ -135,8 +139,19 @@ def crawlEventDetail(detail_url):
     
 
 if __name__== '__main__':
-    detail_url = sys.argv[1]
+    detail_url_file = sys.argv[1]
+    with open(detail_url_file, 'r') as src:
+        detail_urls = json.load(src)
 
-    detail_info = crawlEventDetail(detail_url)
+    for detail_url in detail_urls:
+        event_code = detail_url.split('=')[1].split('&')[0]
+        output_file = f"bus_tour_{event_code}.json"
 
-    print(json.dumps(detail_info, ensure_ascii=False, indent=4))
+        try:
+            detail_info = crawlEventDetail(detail_url)
+
+            with open(output_file, 'w') as dst:
+                json.dump(detail_info, dst, ensure_ascii=False, indent=4)
+        except:
+            pass
+
