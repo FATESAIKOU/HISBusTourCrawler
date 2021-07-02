@@ -1,4 +1,8 @@
 #!/usr/bin/env python3 
+"""
+@argv[1]: The json file containing bus tour detail urls for crawling
+"""
+import time
 import json
 import urllib
 import requests
@@ -32,6 +36,27 @@ def extractDetail(page):
 
         detail_info['summary'][title] = value
 
+    # [booking]
+    detail_info['booking_info'] = []
+    cal_root = page.find('div', attrs={'id': 'calendarWrap'})
+    year_month = '20' + cal_root.find('option', attrs={'selected': 'selected'})['data-key']
+
+    available_dates = [ c.parent for c in cal_root.find_all('li', string='募集中') ]
+    for date in available_dates:
+        date_info = '{}/{}/{}'.format(
+            year_month[0:4], year_month[4:6],
+            date.select('li:nth-of-type(1)')[0].getText()
+        )
+
+        adult_price = date.select('li:nth-of-type(3)')[0].find('span').getText().replace(',', '')
+        child_price = date.select('li:nth-of-type(4)')[0].find('span').getText().replace(',', '')
+
+        detail_info['booking_info'].append({
+            'date': date_info,
+            'adult_price': adult_price,
+            'child_price': child_price
+        })
+
     # [tour point] get image image-meta image-artical
     detail_info['tour_points'] = []
 
@@ -58,24 +83,25 @@ def extractDetail(page):
     # [hotel] get hotel image image-meta image-artical
     detail_info['hotels'] = []
 
-    hotel_root = page.find('p', string='ホテル').parent
-    hotels = hotel_root.find_all('div', attrs={'class': 'contents-box'})
+    if page.find('p', string='ホテル') is not None:
+        hotel_root = page.find('p', string='ホテル').parent
+        hotels = hotel_root.find_all('div', attrs={'class': 'contents-box'})
 
-    for hotel in hotels:
-        title = hotel.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
-        artical = hotel.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
-        
-        images_info = []
-        for image in hotel.find('div', attrs={'class': 'swiper-wrapper'}).find_all('div', attrs={'class': 'swiper-slide'}):
-            images_info.append({
-                'src': image['style'].split("url(")[1].split(")")[0]
+        for hotel in hotels:
+            title = hotel.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
+            artical = hotel.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
+
+            images_info = []
+            for image in hotel.find('div', attrs={'class': 'swiper-wrapper'}).find_all('div', attrs={'class': 'swiper-slide'}):
+                images_info.append({
+                    'src': image['style'].split("url(")[1].split(")")[0]
+                })
+
+            detail_info['hotels'].append({
+                'title': title,
+                'artical': artical,
+                'images_info': images_info
             })
-        
-        detail_info['hotels'].append({
-            'title': title,
-            'artical': artical,
-            'images_info': images_info
-        })
 
     # [schedual]
     detail_info['schedual'] = []
@@ -106,12 +132,26 @@ def crawlEventDetail(detail_url):
     # get detail
     detail_info = extractDetail(page)
 
+    # add event url
+    detail_info['event_url'] = detail_url
+
     return detail_info
     
 
 if __name__== '__main__':
-    detail_url = sys.argv[1]
-    
-    detail_info = crawlEventDetail(detail_url)
-    
-    print(json.dumps(detail_info, ensure_ascii=False, indent=4))
+    detail_url_file = sys.argv[1]
+    with open(detail_url_file, 'r') as src:
+        detail_urls = json.load(src)
+
+    for detail_url in detail_urls:
+        event_code = detail_url.split('=')[1].split('&')[0]
+        output_file = f"bus_tour_{event_code}.json"
+
+        try:
+            detail_info = crawlEventDetail(detail_url)
+
+            with open(output_file, 'w') as dst:
+                json.dump(detail_info, dst, ensure_ascii=False, indent=4)
+        except:
+            pass
+
