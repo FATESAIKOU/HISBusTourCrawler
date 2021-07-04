@@ -5,6 +5,7 @@
 data/*
 .secrets
 .env
+*_test.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
