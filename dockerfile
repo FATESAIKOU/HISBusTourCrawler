@@ -2,6 +2,7 @@ FROM adieuadieu/headless-chromium-for-aws-lambda:89.0.4389.128 AS headless-chrom
 
 FROM amazon/aws-lambda-python:3.7
 MAINTAINER FATESAIKOU
+LABEL authors="FATESAIKOU <qzsecftbhhhh@gmail.com>"
 
 # Install git wget unzip vim
 RUN yum update -y && \
