@@ -32,3 +32,10 @@ class Driver(StorageInterface):
     def uploadData(self, text, filename):
         content = io.BytesIO(bytes(text, 'utf-8'))
         self._bucket.upload_fileobj(content, os.path.join(self.dir, filename))
+
+    def deleteData(self, *filenames):
+        self._bucket.delete_objects(
+            Delete={
+                'Objects': [{'Key': os.path.join(self.dir, fn)} for fn in filenames]
+            }
+        )
