@@ -19,7 +19,12 @@ class Driver(StorageInterface):
         self.dir = config['dir']
 
     def list(self):
-        return [o.key for o in self._bucket.objects.filter(Prefix=self.dir)]
+        fns = set()
+        for o in self._bucket.objects.filter(Prefix=self.dir):
+            if len(o.key) > len(self.dir):
+                fns.add(o.key[len(self.dir):].split('/')[0])
+
+        return list(fns)
 
     def downloadData(self, filename):
         content = io.BytesIO()

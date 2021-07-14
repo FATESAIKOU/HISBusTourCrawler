@@ -26,10 +26,13 @@ class StorageTest(unittest.TestCase):
         data = self.s3.list()
         assert type(data) == list
 
-    def test_upload_download_delete(self):
+    def test_upload_list_download_delete(self):
         self.s3.uploadData('test', 'test.txt')
         content = self.s3.downloadData('test.txt')
         assert content == 'test'
+
+        files = self.s3.list()
+        assert len(files) == 1 and files[0] == 'test.txt'
 
         self.s3.deleteData('test', 'test.txt')
         files = self.s3.list()
