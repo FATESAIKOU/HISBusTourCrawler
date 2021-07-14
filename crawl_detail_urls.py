@@ -1,22 +1,16 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 import json
 import urllib
 import requests
 import sys
 
-from optparse import OptionParser
-from bs4 import BeautifulSoup as Soup 
+from pathlib import Path
+from bs4 import BeautifulSoup as Soup
+from modules.storage import get_storage_instance
 
 
 area_map = ['tyo', 'spk', 'sdj', 'tyo', 'ngo', 'osa', 'hij', 'fuk']
 
-parser = OptionParser()
-parser.add_option("-t", "--test", default=True, action="store_true",
-            help="use options sample for test")
-parser.add_option("-f", "--file",
-            help="read options from file", metavar="FILE")
-parser.add_option("-s", "--stdin", default=False, action="store_true",
-            help="read options from stdin")
 
 def parseHISStyleParam(search_params):
     query_str = ''
@@ -25,13 +19,15 @@ def parseHISStyleParam(search_params):
             for v in search_params[key]:
                 query_str += '&' + urllib.parse.urlencode({key: v})
         else:
-            query_str += '&' + urllib.parse.urlencode({key: search_params[key]})
+            query_str += '&' + \
+                urllib.parse.urlencode({key: search_params[key]})
 
     return query_str[1:]
 
 
 def crawlDetailPageUrls(area_id, search_params):
-    base_url = "https://bus-tour.his-j.com/{}/search/?".format(area_map[area_id])
+    base_url = "https://bus-tour.his-j.com/{}/search/?".format(
+        area_map[area_id])
 
     detail_urls = []
     i = 0
@@ -55,39 +51,24 @@ def crawlDetailPageUrls(area_id, search_params):
 
         if len(tmp_urls) == 0:
             break
-    
+
     return detail_urls
-    
 
-if __name__== '__main__':
 
-    (options, args) = parser.parse_args()
-    
-    options = vars(options)
+if __name__ == '__main__':
+    search_params = json.loads(
+        Path(sys.argv[1]).read_text()
+    )
 
-    if options['file'] is not None:
-        with open(options['file'], 'r') as src:
-            search_params = json.load(src)
-    elif options['stdin'] == True:
-        search_params = json.loads(sys.stdin.read())
-    elif options['test'] == True:
-        search_params = {
-            'area_id': 0,
-            'sort': 'recommend',
-            'departureArea[]': [3],
-            'departureDate': '',
-            'departureMonth': '2021-07',
-            'purpose[]': '',
-            'lowPrice': 0,
-            'highPrice': 50000,
-            'isGoOnly': '',
-            'isReservable': '',
-            'keyword': ''
-        }
-    else:
-        NotImplementedError('No correct option been passed')
+    storage = get_storage_instance(
+        json.loads(
+            Path(sys.argv[2]).read_text()
+        )
+    )
 
     urls = crawlDetailPageUrls(search_params['area_id'], search_params)
 
-    with open('detail_urls.json', 'w') as dst:
-        json.dump(urls, dst, indent=4)
+    storage.uploadData(
+        json.dumps(urls, ensure_ascii=False, indent=4),
+        'detail_urls.json'
+    )

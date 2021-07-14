@@ -16,21 +16,38 @@ jobs:
       with:
         python-version: '3.6.10'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Crawl HIS bus tour
-      run: |
-        ./crawl_detail_urls.py
-        ./crawl_detail.py detail_urls.json
-
     - name: Install aws cli
       uses: chrislennon/action-aws-cli@v1.1
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    - name: Upload results
-      run: ls bus_tour* | xargs -I {} aws s3 cp {} ${{ secrets.CRAWLER_BUCKET_URL }}/tour_details/
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Crawl HIS bus tour
+      run: |
+        aws s3 cp s3://${{ secrets.CRAWLER_BUCKET_NAME }}/${{ secrets.PARAMS_DIR }}${{ secrets.PARAMS_FILE }} .
+        ./crawl_detail_urls.py ${{ secrets.PARAMS_FILE }} <( echo '
+          {
+            "type": "s3",
+            "key": "${{ secrets.AWS_S3_ACCESS_KEY_ID }}",
+            "secret": "${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}",
+            "bucket_name": "${{ secrets.CRAWLER_BUCKET_NAME }}",
+            "dir": "${{ secrets.URLS_DIR }}"
+          }
+        ')
+        aws s3 cp s3://${{ secrets.CRAWLER_BUCKET_NAME }}/${{ secrets.URLS_DIR }}detail_urls.json .
+        ./crawl_detail.py detail_urls.json <(echo '
+          {
+            "type": "s3",
+            "key": "${{ secrets.AWS_S3_ACCESS_KEY_ID }}",
+            "secret": "${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}",
+            "bucket_name": "${{ secrets.CRAWLER_BUCKET_NAME }}",
+            "dir": "${{ secrets.RESULTS_DIR }}"
+          }
+        ')
       env:
         AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}

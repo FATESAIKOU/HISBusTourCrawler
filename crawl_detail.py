@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 """
 @argv[1]: The json file containing bus tour detail urls for crawling
 """
@@ -9,8 +9,10 @@ import requests
 import sys
 import bs4
 
+from pathlib import Path
 from optparse import OptionParser
-from bs4 import BeautifulSoup as Soup 
+from bs4 import BeautifulSoup as Soup
+from modules.storage import get_storage_instance
 
 
 def extractDetail(page):
@@ -24,7 +26,7 @@ def extractDetail(page):
     detail_info['summary'] = {}
     sum_details = page.find_all('span', attrs={'class': 'result-details-ttl'})
     for sum_detail in sum_details:
-        
+
         title = sum_detail.getText()
         value = "Not Found"
         if type(sum_detail.next_sibling) is bs4.element.NavigableString:
@@ -39,17 +41,20 @@ def extractDetail(page):
     # [booking]
     detail_info['booking_info'] = []
     cal_root = page.find('div', attrs={'id': 'calendarWrap'})
-    year_month = '20' + cal_root.find('option', attrs={'selected': 'selected'})['data-key']
+    year_month = '20' + \
+        cal_root.find('option', attrs={'selected': 'selected'})['data-key']
 
-    available_dates = [ c.parent for c in cal_root.find_all('li', string='募集中') ]
+    available_dates = [c.parent for c in cal_root.find_all('li', string='募集中')]
     for date in available_dates:
         date_info = '{}/{}/{}'.format(
             year_month[0:4], year_month[4:6],
             date.select('li:nth-of-type(1)')[0].getText()
         )
 
-        adult_price = date.select('li:nth-of-type(3)')[0].find('span').getText().replace(',', '')
-        child_price = date.select('li:nth-of-type(4)')[0].find('span').getText().replace(',', '')
+        adult_price = date.select(
+            'li:nth-of-type(3)')[0].find('span').getText().replace(',', '')
+        child_price = date.select(
+            'li:nth-of-type(4)')[0].find('span').getText().replace(',', '')
 
         detail_info['booking_info'].append({
             'date': date_info,
@@ -61,12 +66,15 @@ def extractDetail(page):
     detail_info['tour_points'] = []
 
     tour_point_root = page.find('p', string='ツアーポイント').parent
-    tour_points = tour_point_root.find_all('div', attrs={'class': 'contents-box'})
+    tour_points = tour_point_root.find_all(
+        'div', attrs={'class': 'contents-box'})
 
     for tour_point in tour_points:
-        title = tour_point.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
-        artical = tour_point.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
-        
+        title = tour_point.find(
+            'p', attrs={'class': 'point-box-ttl'}).getText().strip()
+        artical = tour_point.find(
+            'div', attrs={'class': 'point-box-txt'}).getText().strip()
+
         images_info = []
         for image in tour_point.find_all('img'):
             images_info.append({
@@ -88,8 +96,10 @@ def extractDetail(page):
         hotels = hotel_root.find_all('div', attrs={'class': 'contents-box'})
 
         for hotel in hotels:
-            title = hotel.find('p', attrs={'class': 'point-box-ttl'}).getText().strip()
-            artical = hotel.find('div', attrs={'class': 'point-box-txt'}).getText().strip()
+            title = hotel.find(
+                'p', attrs={'class': 'point-box-ttl'}).getText().strip()
+            artical = hotel.find(
+                'div', attrs={'class': 'point-box-txt'}).getText().strip()
 
             images_info = []
             for image in hotel.find('div', attrs={'class': 'swiper-wrapper'}).find_all('div', attrs={'class': 'swiper-slide'}):
@@ -105,7 +115,7 @@ def extractDetail(page):
 
     # [schedual]
     detail_info['schedual'] = []
-    
+
     schedual_root = page.find('p', string='行程表').parent
 
     for daily_schedual in schedual_root.find_all('ol'):
@@ -122,6 +132,7 @@ def extractDetail(page):
 
     return detail_info
 
+
 def crawlEventDetail(detail_url):
     # build query url & send request
     resp = requests.get(detail_url)
@@ -136,22 +147,34 @@ def crawlEventDetail(detail_url):
     detail_info['event_url'] = detail_url
 
     return detail_info
-    
 
-if __name__== '__main__':
-    detail_url_file = sys.argv[1]
-    with open(detail_url_file, 'r') as src:
-        detail_urls = json.load(src)
+
+if __name__ == '__main__':
+    detail_urls = json.loads(
+        Path(sys.argv[1]).read_text()
+    )
+
+    storage = get_storage_instance(
+        json.loads(
+            Path(sys.argv[2]).read_text()
+        )
+    )
+
+    downloaded_events = storage.list()
 
     for detail_url in detail_urls:
         event_code = detail_url.split('=')[1].split('&')[0]
+
         output_file = f"bus_tour_{event_code}.json"
+        if output_file in downloaded_events:
+            continue
 
         try:
             detail_info = crawlEventDetail(detail_url)
 
-            with open(output_file, 'w') as dst:
-                json.dump(detail_info, dst, ensure_ascii=False, indent=4)
-        except:
-            pass
-
+            storage.uploadData(
+                json.dumps(detail_info, ensure_ascii=False, indent=4),
+                output_file
+            )
+        except Exception as e:
+            print(e)

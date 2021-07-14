@@ -1,10 +1,14 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
+import sys
 import json
 
+from pathlib import Path
 from selenium import webdriver
+from modules.storage import get_storage_instance
 
 
 area_map = ['tyo', 'spk', 'sdj', 'tyo', 'ngo', 'osa', 'hij', 'fuk']
+
 
 def getOptionValueTextPair(driver, input_name):
     info_key = "{ 'text': x.getAttribute('data-text'), 'value': x.value }"
@@ -64,11 +68,17 @@ def crawlSearchOptions(area_id):
     }
 
 
-if __name__== '__main__':
+if __name__ == '__main__':
+    storage = get_storage_instance(
+        json.loads(
+            Path(sys.argv[1]).read_text()
+        )
+    )
+
     for area_id in area_map:
         search_option_db = {}
         search_option_db[area_id] = crawlSearchOptions(area_id)
-
-        with open('{}_search_option_db.json'.format(area_id), 'w') as dst:
-            json.dump(search_option_db, dst, ensure_ascii=False, indent=4)
-
+        storage.uploadData(
+            json.dumps(search_option_db, ensure_ascii=False, indent=4),
+            "{}_search_option_db.json".format(area_id)
+        )
