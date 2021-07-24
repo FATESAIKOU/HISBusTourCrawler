@@ -62,7 +62,7 @@ def extractDetail(page):
             'child_price': child_price
         })
 
-    # [tour point] get image image-meta image-artical
+    # [tour point] get image image-meta image-article
     detail_info['tour_points'] = []
 
     tour_point_root = page.find('p', string='ツアーポイント').parent
@@ -72,7 +72,7 @@ def extractDetail(page):
     for tour_point in tour_points:
         title = tour_point.find(
             'p', attrs={'class': 'point-box-ttl'}).getText().strip()
-        artical = tour_point.find(
+        article = tour_point.find(
             'div', attrs={'class': 'point-box-txt'}).getText().strip()
 
         images_info = []
@@ -84,11 +84,11 @@ def extractDetail(page):
 
         detail_info['tour_points'].append({
             'title': title,
-            'artical': artical,
+            'article': article,
             'images_info': images_info
         })
 
-    # [hotel] get hotel image image-meta image-artical
+    # [hotel] get hotel image image-meta image-article
     detail_info['hotels'] = []
 
     if page.find('p', string='ホテル') is not None:
@@ -98,7 +98,7 @@ def extractDetail(page):
         for hotel in hotels:
             title = hotel.find(
                 'p', attrs={'class': 'point-box-ttl'}).getText().strip()
-            artical = hotel.find(
+            article = hotel.find(
                 'div', attrs={'class': 'point-box-txt'}).getText().strip()
 
             images_info = []
@@ -109,25 +109,25 @@ def extractDetail(page):
 
             detail_info['hotels'].append({
                 'title': title,
-                'artical': artical,
+                'article': article,
                 'images_info': images_info
             })
 
-    # [schedual]
-    detail_info['schedual'] = []
+    # [schedule]
+    detail_info['schedule'] = []
 
-    schedual_root = page.find('p', string='行程表').parent
+    schedule_root = page.find('p', string='行程表').parent
 
-    for daily_schedual in schedual_root.find_all('ol'):
-        schedual_details = []
-        for schedual_detail in daily_schedual.find_all('li'):
-            text = schedual_detail.getText().strip()
+    for daily_schedule in schedule_root.find_all('ol'):
+        schedule_details = []
+        for schedule_detail in daily_schedule.find_all('li'):
+            text = schedule_detail.getText().strip()
 
             if text != '↓':
-                schedual_details.append(text)
+                schedule_details.append(text)
 
-        detail_info['schedual'].append(
-            schedual_details
+        detail_info['schedule'].append(
+            schedule_details
         )
 
     return detail_info
