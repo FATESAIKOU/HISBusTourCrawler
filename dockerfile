@@ -1,27 +1,14 @@
-FROM adieuadieu/headless-chromium-for-aws-lambda:89.0.4389.128 AS headless-chrome-image
+FROM ubuntu:18.04
 
-FROM amazon/aws-lambda-python:3.7
-MAINTAINER FATESAIKOU
-LABEL authors="FATESAIKOU <qzsecftbhhhh@gmail.com>"
+RUN apt-get update && \
+    apt-get install -y apt-utils ssh netcat jq psmisc && \
+    apt-get install -y python3 python3-pip && \
+    apt-get install -y chromium-browser udev chromium-chromedriver
 
-# Install git wget unzip vim
-RUN yum update -y && \
-  yum install -y git wget unzip vim procps psmisc && \
-  rm -Rf /var/cache/yum
+RUN pip3 install --upgrade pip && pip3 install beautifulsoup4 requests selenium ipython boto3
 
-# Install chromium
-COPY --from=headless-chrome-image /bin/headless-chromium /var/task/bin/chromium
+# Set Lang
+ENV LANG C.UTF-8
+ENV LC_ALL=C.UTF-8
 
-# Install chromedriver
-RUN wget 'https://chromedriver.storage.googleapis.com/89.0.4389.23/chromedriver_linux64.zip' -O temp.zip && \
-	unzip temp.zip && \
-	mv chromedriver /var/task/bin/chromedriver
-
-# Install python dependency
-ADD requirements.txt ${LAMBDA_TASK_ROOT}/requirements.txt
-RUN pip3 install -r requirements.txt
-
-# Add /var/task/bin to $PATH
-ENV PATH="${PATH}:/var/task/bin"
-
-CMD [ "lambda_main.handler" ]
+WORKDIR /project
