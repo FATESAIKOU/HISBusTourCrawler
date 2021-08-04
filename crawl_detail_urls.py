@@ -56,14 +56,14 @@ def crawlDetailPageUrls(area_id, search_params):
 
 
 if __name__ == '__main__':
-    search_params = json.loads(
-        Path(sys.argv[1]).read_text()
-    )
-
     storage = get_storage_instance(
         json.loads(
-            Path(sys.argv[2]).read_text()
+            Path(sys.argv[1]).read_text()
         )
+    )
+
+    search_params = json.loads(
+        Path(sys.argv[2]).read_text()
     )
 
     urls = crawlDetailPageUrls(search_params['area_id'], search_params)

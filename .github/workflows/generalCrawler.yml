@@ -9,12 +9,12 @@ on:
             script:
                 description: "the script to run(end by .py)"
                 required: true
-            crawl_config:
-                description: "informations to use for searching(json, encoded in base64)"
-                required: true
             storage_config:
                 description: "informations of a storage to restore the dat a crawled(json, encoded in base64)"
                 requried: true
+            crawl_config:
+                description: "informations to use for searching(json, encoded in base64)"
+                required: true
 jobs:
     general-crawler:
         name: general-crawler
@@ -33,4 +33,6 @@ jobs:
                       echo "${{ github.event.inputs.crawl_config }}" | base64 -d > crawl_config.json
                       echo "${{ github.event.inputs.storage_config }}" | base64 -d > storage_config.json
 
-                      python3 ${{ github.event.inputs.script }} crawl_config.json storage_config.json
+                      python3 ${{ github.event.inputs.script }} storage_config.json crawl_config.json
+
+                      rm crawl_config.json storage_config.json
