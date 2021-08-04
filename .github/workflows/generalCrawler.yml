@@ -22,6 +22,14 @@ jobs:
         steps:
             - uses: actions/checkout@v1
 
+            - name: prepare config files
+              run: |
+                  echo "$crawl_config" | base64 -d > crawl_config.json
+                  echo "$storage_config" | base64 -d > storage_config.json
+              env:
+                  crawl_config: "${{ github.event.inputs.crawl_config }}"
+                  storage_config: "${{ github.event.inputs.storage_config }}"
+
             - name: crawl data
               uses: addnab/docker-run-action@v3
               with:
@@ -29,9 +37,6 @@ jobs:
                   options: -v ${{ github.workspace }}:/project -v /github/home:/pj2
                   run: |
                       cd /project
-
-                      echo "${{ github.event.inputs.crawl_config }}" | base64 -d > crawl_config.json
-                      echo "${{ github.event.inputs.storage_config }}" | base64 -d > storage_config.json
 
                       python3 ${{ github.event.inputs.script }} storage_config.json crawl_config.json
 
