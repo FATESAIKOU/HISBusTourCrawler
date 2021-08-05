@@ -1,20 +1,69 @@
 #!/usr/bin/env python3
-"""
-@argv[1]: The json file containing bus tour detail urls for crawling
-"""
-import time
 import json
 import urllib
 import requests
 import sys
+import time
 import bs4
 
-from pathlib import Path
 from optparse import OptionParser
+from pathlib import Path
 from bs4 import BeautifulSoup as Soup
 from modules.storage import get_storage_instance
 
 
+area_map = ['tyo', 'spk', 'sdj', 'tyo', 'ngo', 'osa', 'hij', 'fuk']
+
+
+###################################################################
+# Functions for crawling detail page urls                         #
+###################################################################
+def parseHISStyleParam(search_params):
+    query_str = ''
+    for key in search_params:
+        if type(search_params[key]) == list:
+            for v in search_params[key]:
+                query_str += '&' + urllib.parse.urlencode({key: v})
+        else:
+            query_str += '&' + \
+                urllib.parse.urlencode({key: search_params[key]})
+
+    return query_str[1:]
+
+
+def crawlDetailPageUrls(area_id, search_params):
+    base_url = "https://bus-tour.his-j.com/{}/search/?".format(
+        area_map[area_id])
+
+    detail_urls = []
+    i = 0
+    while True:
+        i += 1
+        search_params['page'] = i
+
+        # build query url & send request
+        resp = requests.get(base_url + parseHISStyleParam(search_params))
+
+        # create beautifulsoup obj
+        page = Soup(resp.content.decode('utf-8'), features="html.parser")
+
+        # get all url
+        tmp_urls = list(map(
+            lambda p: 'https://bus-tour.his-j.com' + p.find('a').get('href'),
+            page.find_all('p', attrs={'class': 'result-btn'})
+        ))
+
+        detail_urls.extend(tmp_urls)
+
+        if len(tmp_urls) == 0:
+            break
+
+    return detail_urls
+
+
+###################################################################
+# Functions for crawl detail pages                                 #
+###################################################################
 def extractDetail(page):
     detail_info = {}
 
@@ -156,9 +205,11 @@ if __name__ == '__main__':
         )
     )
 
-    detail_urls = json.loads(
+    search_params = json.loads(
         Path(sys.argv[2]).read_text()
     )
+
+    detail_urls = crawlDetailPageUrls(search_params['area_id'], search_params)
 
     downloaded_events = storage.list()
 
