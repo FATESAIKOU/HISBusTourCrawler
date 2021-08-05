@@ -1,0 +1,43 @@
+name: General crawler
+
+on:
+    workflow_dispatch:
+        inputs:
+            image:
+                description: "base image to run the crawler"
+                required: true
+            script:
+                description: "the script to run(end by .py)"
+                required: true
+            storage_config:
+                description: "informations of a storage to restore the dat a crawled(json, encoded in base64)"
+                requried: true
+            crawl_config:
+                description: "informations to use for searching(json, encoded in base64)"
+                required: true
+jobs:
+    general-crawler:
+        name: general-crawler
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v1
+
+            - name: prepare config files
+              run: |
+                  CRAWL_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.crawl_config' | sed 's/"//g')
+                  STORAGE_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.storage_config' | sed 's/"//g')
+
+                  echo $CRAWL_CONFIG | base64 -d > crawl_config.json
+                  echo $STORAGE_CONFIG | base64 -d > storage_config.json
+
+            - name: crawl data
+              uses: addnab/docker-run-action@v3
+              with:
+                  image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.image }}
+                  options: -v ${{ github.workspace }}:/project -v /github/home:/pj2
+                  run: |
+                      cd /project
+
+                      python3 ${{ github.event.inputs.script }} storage_config.json crawl_config.json
+
+                      rm crawl_config.json storage_config.json

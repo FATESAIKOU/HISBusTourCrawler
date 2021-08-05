@@ -150,14 +150,14 @@ def crawlEventDetail(detail_url):
 
 
 if __name__ == '__main__':
-    detail_urls = json.loads(
-        Path(sys.argv[1]).read_text()
-    )
-
     storage = get_storage_instance(
         json.loads(
-            Path(sys.argv[2]).read_text()
+            Path(sys.argv[1]).read_text()
         )
+    )
+
+    detail_urls = json.loads(
+        Path(sys.argv[2]).read_text()
     )
 
     downloaded_events = storage.list()
