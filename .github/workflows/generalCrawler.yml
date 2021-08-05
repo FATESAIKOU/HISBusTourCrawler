@@ -24,11 +24,14 @@ jobs:
 
             - name: prepare config files
               run: |
-                  echo "$crawl_config" | base64 -d > crawl_config.json
-                  echo "$storage_config" | base64 -d > storage_config.json
-              env:
-                  crawl_config: "${{ github.event.inputs.crawl_config }}"
-                  storage_config: "${{ github.event.inputs.storage_config }}"
+                  CRAWL_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.crawl_config' | sed 's/"//g')
+                  STORAGE_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.storage_config' | sed 's/"//g')
+
+                  echo $CRAWL_CONFIG
+                  echo $STORAGE_CONFIG
+
+                  echo $CRAWL_CONFIG | base64 -d > crawl_config.json
+                  echo $STORAGE_CONFIG | base64 -d > storage_config.json
 
             - name: crawl data
               uses: addnab/docker-run-action@v3
