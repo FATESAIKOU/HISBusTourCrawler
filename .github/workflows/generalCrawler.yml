@@ -11,10 +11,10 @@ on:
                 required: true
             storage_config:
                 description: "informations of a storage to restore the dat a crawled(json, encoded in base64)"
-                requried: true
+                requried: false
             crawl_config:
                 description: "informations to use for searching(json, encoded in base64)"
-                required: true
+                required: false
 jobs:
     general-crawler:
         name: general-crawler
@@ -26,6 +26,17 @@ jobs:
               run: |
                   CRAWL_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.crawl_config' | sed 's/"//g')
                   STORAGE_CONFIG=$(cat $GITHUB_EVENT_PATH | jq '.inputs.storage_config' | sed 's/"//g')
+
+                  # If an arg not provided, sed will return "null" which length is 5(+ new line),
+                  # So, if there is an json config that shorter then "null"(len: 5), we assume
+                  # it isn't a valid arg and set it to "".
+                  if [ $(wc -c <<<"$CRAWL_CONFIG") -lt 5 ]; then
+                      CRAWL_CONFIG="";
+                  fi
+
+                  if [ $(wc -c <<<"$STORAGE_CONFIG") -lt 5 ]; then
+                      STORAGE_CONFIG="";
+                  fi
 
                   echo $CRAWL_CONFIG | base64 -d > crawl_config.json
                   echo $STORAGE_CONFIG | base64 -d > storage_config.json
