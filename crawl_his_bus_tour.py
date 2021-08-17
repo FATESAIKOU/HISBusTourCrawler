@@ -97,7 +97,7 @@ def extractDetail(page):
     for date in available_dates:
         date_info = '{}/{}/{}'.format(
             year_month[0:4], year_month[4:6],
-            date.select('li:nth-of-type(1)')[0].getText()
+            date.select('li:nth-of-type(1)')[0].getText().split('/')[-1]
         )
 
         adult_price = date.select(
